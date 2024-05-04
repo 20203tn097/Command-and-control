@@ -1,0 +1,67 @@
+tar xvzf splunk_installer.tgz
+ls
+After the installation is complete, a new folder named splunk will be created, as shown below. Let's now move this folder to the /opt/ directory and start working on Splunk from there.
+
+mv splunk /opt/
+
+The above step unzips the Splunk installer and installs all the necessary binaries and files on the system. Once installed, go to the directory /opt/splunk/bin and run the following command to start Splunk ./splunk start --accept-license. 
+As it is the first time we are starting the Splunk instance, it will ask the user for admin credentials. Create a user account and proceed.
+
+The splunk start command is used to start the Splunk server. This command starts all the necessary Splunk processes and enables the server to accept incoming data. 
+If the server is already running, this command will have no effect.
+cd /opt/splunk/bin
+./splunk start --accept-license
+
+--------------
+./bin/splunk start
+./bin/splunk restart
+
+Command: splunk add oneshot
+The splunk add oneshot command is used to add a single event to the Splunk index. This is useful for testing purposes or for adding individual events that may not be part of a larger data stream.
+
+./bin/splunk add oneshot
+
+The splunk stop command is used to stop the Splunk server. This command stops all the running Splunk processes and disables the server from accepting incoming data. 
+If the server is not running, this command will have no effect.
+
+./bin/splunk stop
+
+The splunk add oneshot command is used to add a single event to the Splunk index. This is useful for testing purposes or for adding individual events that may not be part of a larger data stream.
+
+----------------------------------------------------------------------------------
+
+The splunk search command is used to search for data in the Splunk index. This command can be used to search for specific events, as well as to perform more complex searches using Splunk's search language.
+
+./bin/splunk search coffely 
+
+-------------------------------------------------------------------------------
+Install Forwarder
+
+Change the user to sudo, unpack, and install the forwarder with the following command.
+
+tar xvzf splunkforwarder.tgz
+mv splunkforwarder /opt/
+cd /opt/splunkforwarder
+c
+
+---------------------------------------------------------------------
+so in the setings go to forwarding and resiving and add new port thath will be listenning in that por for resiving 
+
+and aftert that we need to creat an index in the setings
+
+Configuring Forwarder
+It's time to configure the forwarder to ensure it sends the data to the right destination. Back in the Linux host terminal, go to the /opt/splunkforwarder/bin direc tory:
+
+./splunk add forward-server 10.10.42.110:9997
+
+Linux Log Sources
+Linux stores all its important logs into the /var/log file, as shown below. In our case, we will ingest syslog into Splunk. All other logs can be ingested using the same method.
+
+Next, we will tell Splunk forwarder which logs files to monitor. Here, we tell Splunk Forwarder to monitor the /var/log/syslog file.
+./splunk add monitor /var/log/syslog -index Linux_host
+
+So we need to taste the log
+
+logger "coffely-has-the-best-coffee-in-town"
+tryhackme@coffely:/tryhackme@coffleylab:/opt/splunkforwarder/bin# tail -1 /var/log/syslog
+-----------------------------------
