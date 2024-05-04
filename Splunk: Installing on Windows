@@ -1,0 +1,6 @@
+Run the Splunk-Instance installer. By default, it will install Splunk in the folder C:\Program Files\Splunk. This will check the system for dependencies and will take 5-8 minutes to install the Splunk instance.
+
+el comando para lamacenar datos de una aplicacion
+C:\inetpub\logs\LogFiles\W3SVC*
+
+Esto es lo que llevo?
