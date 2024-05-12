@@ -1,0 +1,8 @@
+System Resource Usage Monitor (SRUM)
+
+The SRUM is a Windows feature that tracks the last 30 to 60 days of resource usage, such as:
+
+Application and service activity
+Network activity, such as packets sent and received
+User activity (I.e. launching services or processes).
+In a database (SRUDB.dat) on the host, this can be found at C:\Windows\System32\sru\SRUDB.dat.
