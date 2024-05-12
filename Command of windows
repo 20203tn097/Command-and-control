@@ -1,0 +1,56 @@
+getfile 'Name of file'
+
+Proccess
+
+FindFile malware.exe
+
+Basic commands
+The following commands are available for user roles that are granted the ability to run basic live response commands.
+
+Command	Description
+[cd]	Changes the current directory.
+[cls]	Clears the console screen.
+[connect]	Starts a live response session to the device.
+[connections]	Shows all the active connections.
+[dir]	Shows a list of files and subdirectories in a directory.
+[getfile] <file_path>	Downloads a file in the background.
+[drivers]	Shows all drivers installed on the device.
+[fg] <command ID>	Returns a file download to the foreground.
+[fileinfo]	Get information about a file.
+[findfile]	Locates files by a given name on the device.
+[help]	Provides help information for live response commands.
+[persistence]	Shows all known persistence methods on the device.
+[processes]	Shows all processes running on the device.
+[registry]	Shows registry values.
+[scheduledtasks]	Shows all scheduled tasks on the device.
+[services]	Shows all services on the device.
+[trace]	Sets the terminal's logging mode to debug.
+Advanced commands
+The following commands are available for user roles that are granted the ability to run advanced live response commands.
+
+Command	Description
+analyze	Analyses the entity with various incrimination engines to reach a verdict.
+getfile	Gets a file from the device. This command has a prerequisite command. You can use the -auto command with getfile to automatically run the prerequisite command.
+run	Runs a PowerShell script from the library on the device.
+library	Lists files that were uploaded to the live response library.
+putfile	Puts a file from the library to the device. Files are saved in a working folder and are deleted when the device restarts by default.
+remediate	Remediates an entity on the device. The remediation action will vary depending on the entity type. This command has a prerequisite command. You can use the -auto command with remediate to automatically run the prerequisite command.
+Undo	Restores an entity that was remediated.
+
+
+Download a file in the background
+To enable your security operations team to continue investigating an impacted device, files can now be downloaded in the background.
+
+To download a file in the background, in the live response command console, type getfile <file_path>.
+
+If you're waiting for a file to be downloaded, you can move it to the background by using Ctrl + Z.
+
+To bring a file download to the foreground, in the live response command console, type fg <command_id>.
+
+Here are some examples:
+
+Command	What it does
+getfile "C:\windows\some_file.exe"	Starts downloading a file named some_file.exe in the background.
+fg 1234	Returns a download with command ID 1234 to the foreground.
+
+
