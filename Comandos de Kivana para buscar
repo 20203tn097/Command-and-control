@@ -1,0 +1,52 @@
+Range queries allow us to search for documents with field values within a specified range. 
+
+Consider the following example dataset:
+
+alert_id	alert_type	response_time_seconds
+1	Malware Detection	120
+2	Unusual Login Attempt	240
+3	Suspicious Traffic	600
+4	Unauthorized File Access	300
+5	Phishing Email	180
+
+To search for all documents where the "response_time_seconds" field is greater than or equal to 100, then the query for you to use is:
+response_time_seconds >= 100
+Here's one for less than 300:
+response_time_seconds < 300
+And, of course, these can be combined with an AND operator.
+response_time_seconds >= 100 AND response_time_seconds < 300
+The query will return the documents with alert_id 1, 2, and 5.
+
+Ranges are beneficial for dates, which you'll get to try in Kibana in a later section. There are different ways to search by ranges, and one way is by specifying the date by following specific formats. 
+@timestamp<"yyyy-MM-ddTHH:mm:ssZ"
+The time is optional, so you can also do the following:
+@timestamp>yyyy-MM-dd
+
+Trying it out in KibanaLike in the previous task, you can try the above queries by changing the index, this time to ranges.
+Use the query response_time_seconds >= 100 AND response_time_seconds < 300 and you should see the following results:
+
+To search for all documents where the "host_name" field is similar, but not necessarily identical to "serber", you can use the following query:
+host_name:server01~1
+
+As you can see, the "~" character indicates that we are doing a fuzzy search. The format of the query is as follows:
+field_name:search_term~fuzziness_value
+
+The format when doing a proximity search is like so:
+field_name:"search term"~slop_value
+
+As you can see, the "~" character is used, followed by a slop_value. Note that "~" is used for both proximity searches and fuzzy searching; the difference is that in proximity searches, the slop value is applied to a phrase enclosed in quotation marks (").
+
+Let's continue. Consider the following example dataset:
+
+log_id	log_message
+1	Server error: failed login attempt.
+2	Login server - failed on startup with error.
+3	Login to server failed successfully.
+4	Server: Detected error in connection.
+
+
+log_message:"server error"~4  OR "login server"~1
+incident_comments: "detected negative"~2
+Event_Type:/(S|M).*/
+Description:/(s|m).*/ AND /user/.*
+affected_systems.affected_files.file_name:/client_list.*/
