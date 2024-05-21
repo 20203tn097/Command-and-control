@@ -1,0 +1,883 @@
+Commands for tree hunti
+
+
+Formato de Certificación de Estudios
+
+SecurityEvemt | where EventID == "4626" | summarize count() by Acount | limit 10
+----------------------------------------------------------------------------------------------------------------
+
+search "err"
+
+search in (SecurityEvent,SecurityAlert,A*) "err"
+
+------------------------------------------
+
+SecurityEvent
+| where TimeGenerated > ago(1d)
+
+SecurityEvent
+| where TimeGenerated > ago(1h) and EventID == "4624"
+
+SecurityEvent
+| where TimeGenerated > ago(1h)
+| where EventID == 4624
+| where AccountType =~ "user"
+
+SecurityEvent | where EventID in (4624, 4625)
+
+----------------------------------------------------------------------
+Declare dynamic tables or lists
+Let statements allow for the creation of dynamic tables or lists.
+
+Kusto
+
+Copy
+let suspiciousAccounts = datatable(account: string) [
+    @"\administrator", 
+    @"NT AUTHORITY\SYSTEM"
+];
+SecurityEvent | where Account in (suspiciousAccounts)
+Kusto
+
+Copy
+let LowActivityAccounts =
+    SecurityEvent 
+    | summarize cnt = count() by Account 
+    | where cnt < 1000;
+LowActivityAccounts | where Account contains "SQL"
+---------------------------------------------------------------------------------------
+Use the extend operator
+
+6 minutes
+The extend operator will create calculated columns and append the new columns to the result set.
+
+The KQL example below uses the extend operator to create a new column, StartDir containing the directory a process was started in. The StartDir column is a calculated column containing the results of a substring function.
+
+Kusto
+
+Copy
+
+SecurityEvent
+| where ProcessName != "" and Process != ""
+| extend StartDir =  substring(ProcessName,0, string_size(ProcessName)-string_size(Process))
+--------------------------------------------------------------------------------------------------
+
+Use the project operators
+Completed
+100 XP
+3 minutes
+The project operators control what columns to include, add, remove, or rename in the result set of a statement.
+
+There are multiple types of project operators. The following table is a list of the variations.
+
+Operator	Description
+project	Select the columns to include, rename or drop, and insert new computed columns.
+project-away	Select what columns from the input to exclude from the output.
+project-keep	Select what columns from the input to keep in the output.
+project-rename	Select the columns to rename in the resulting output.
+project-reorder	Set the column order in the resulting output.
+
+Project operator
+Select the columns to include, rename or drop, and insert new computed columns.
+
+ Tip
+
+The project operator will limit the size of the result set, which will increase performance
+
+Run each Query separately to see the results.
+
+Kusto
+
+Copy
+SecurityEvent
+| project Computer, Account
+
+
+SecurityEvent
+| where ProcessName != "" and Process != ""
+| extend StartDir =  substring(ProcessName,0, string_size(ProcessName)-string_size(Process))
+| order by StartDir desc, Process asc
+| project Process, StartDir
+
+Project-away operator
+Select what columns from the input to exclude from the output.
+
+This example builds from our previous extend and order by operators. The project-away will remove the unnecessary column from the result set. In this example, we'll remove the ProcessName column.
+
+Kusto
+
+Copy
+SecurityEvent
+| where ProcessName != "" and Process != ""
+| extend StartDir =  substring(ProcessName,0, string_size(ProcessName)-string_size(Process))
+| order by StartDir desc, Process asc
+| project-away ProcessName
+
+-----------------------------------------------
+
+SecurityEvent | summarize by Activity
+
+Securityevent 
+| where EventID == "Number"
+| summarize count() by process, Computer
+--------------------------------------------------------
+
+Function(s)	Description
+count(), countif()	Returns a count of the records per summarization group
+dcount(), dcountif()	Returns an estimate for the number of distinct values taken by a scalar expression in the summary group.
+avg(), avgif()	Calculates the average of Expr across the group.
+max(), maxif()	Returns the maximum value across the group.
+min(), minif()	Returns the minimum value across the group.
+percentile()	Returns an estimate for the specified nearest-rank percentile of the population defined by Expr. The accuracy depends on the density of population in the region of the percentile.
+stdev(), stdevif()	Calculates the standard deviation of Expr across the group, considering the group as a sample.
+sum(), sumif()	Calculates the sum of Expr across the group.
+variance(), varianceif()	Calculates the variance of Expr across the group, considering the group as a sample.
+
+-------------------------------------------------------------------------------------------------------
+<dcount> function example
+The following example returns a count of unique IP Addresses.
+
+Kusto
+
+Copy
+SecurityEvent
+| summarize dcount(IpAddress)
+---------------------------------------------------------------------------------------------
+
+Let's take a look at a real-world example
+The following statement is a rule to detect Invalid Password failures across multiple applications for the same account.
+
+The where operator for ResultDescription filters the result set for results including "Invalid password". Next, the statement "summarize" produces a distinct count of application names and group by User and IP Address. Finally, there's a check against a variable created (threshold) to see if the number exceeds the allowed amount.
+
+Kusto
+
+Copy
+let timeframe = 30d;
+let threshold = 1;
+SigninLogs
+| where TimeGenerated >= ago(timeframe)
+| where ResultDescription has "Invalid password"
+| summarize applicationCount = dcount(AppDisplayName) by UserPrincipalName, IPAddress
+| where applicationCount >= threshold
+
+---------------------------------------------------------------------------------------------
+
+Use the summarize operator to filter results
+Completed
+100 XP
+6 minutes
+The arg_max() and arg_min() functions filter out top and bottom rows respectively.
+
+arg_max function
+The following statement will return the most current row from the SecurityEvent table for the computer SQL12.NA.contosohotels.com. The * in the arg_max function requests all columns for the row.
+
+Kusto
+
+Copy
+SecurityEvent 
+| where Computer == "SQL12.na.contosohotels.com"
+| summarize arg_max(TimeGenerated,*) by Computer
+
+arg_min function
+In this statement, the oldest SecurityEvent for the computer SQL12.NA.contosohotels.com will be returned as the result set.
+
+Kusto
+
+Copy
+SecurityEvent 
+| where Computer == "SQL12.na.contosohotels.com"
+| summarize arg_min(TimeGenerated,*) by Computer
+
+Revisiting the result pipe
+The order results pass through the pipe character matters. Review the following two KQL statements. What is the difference between the result sets?
+
+Run each Query separately to see the results.
+
+Kusto
+
+Copy
+// Statement 1
+
+SecurityEvent
+| summarize arg_max(TimeGenerated, *) by Account
+| where EventID == "4624"
+
+// Statement 2
+
+SecurityEvent
+| where EventID == "4624"
+| summarize arg_max(TimeGenerated, *) by Account
+
+Statement 1 will have Accounts for which the last activity was a Logon.
+
+---------------------------------------------------------------------------------------------
+
+make_list() function
+The function returns a dynamic (JSON) array of all the values of Expression in the group.
+
+This KQL query will first filter the EventID with the where operator. Next, for each Computer, the results are a JSON array of Accounts. The resulting JSON array will include duplicate accounts.
+
+Kusto
+
+Copy
+SecurityEvent
+| where EventID == "4624"
+| summarize make_list(Account) by Computer
+
+---------------------------------------------------------------------------------------------
+
+make_set() function
+Returns a dynamic (JSON) array containing distinct values that Expression takes in the group.
+
+This KQL query will first filter the EventID with the where operator. Next, for each Computer, the results are a JSON array of unique Accounts.
+
+Kusto
+
+Copy
+SecurityEvent
+| where EventID == "4624"
+| summarize make_set(Account) by Computer
+
+---------------------------------------------------------------------------------------------
+
+visualizations
+Completed
+100 XP
+5 minutes
+The render operator generates a visualization of the query results.
+
+The supported visualizations are:
+
+areachart
+barchart
+columnchart
+piechart
+scatterchart
+timechart
+Kusto
+
+Copy
+SecurityEvent 
+| summarize count() by Account
+| render barchart
+
+Use the summarize operator to create time series
+The bin() function rounds values down to an integer multiple of the given bin size. Used frequently in combination with summarize by .... If you have a scattered set of values, the values are grouped into a smaller set of specific values. Combining the generated time series and pipe to a render operator with a type of timechart provides a time-series visualization.
+
+Kusto
+
+Copy
+SecurityEvent 
+| summarize count() by bin(TimeGenerated, 1d) 
+| render timechart
+
+
+---------------------------------------------------------------------------------------------
+
+Use the union operator
+Completed
+100 XP
+5 minutes
+The union operator takes two or more tables and returns the rows of all of them. Understanding how results are passed and impacted with the pipe character is essential.
+
+Based on the time window set in the Query window:
+
+Query 1 will return all rows of SecurityEvent and all rows of SigninLogs
+
+Query 2 will return one row and column, which is the count of all rows of SecurityEvent and all rows of SigninLogs
+
+Query 3 will return all rows of SecurityEvent and one row for SigninLogs.
+
+Run each Query separately to see the results.
+
+Kusto
+
+Copy
+// Query 1
+
+SecurityEvent 
+| union SigninLogs  
+
+// Query 2
+
+SecurityEvent 
+| union SigninLogs  
+| summarize count() 
+| project count_
+
+// Query 3
+
+SecurityEvent 
+| union (SigninLogs | summarize count()| project count_)
+
+---------------------------------------------------------------------------------------------
+
+The union operator supports wildcards to union multiple tables. The following KQL will create a count for the rows in all tables with names that start with Security.
+
+Kusto
+
+Copy
+union Security* 
+| summarize count() by Type
+
+---------------------------------------------------------------------------------------------
+
+Use the join operator
+Completed
+100 XP
+7 minutes
+The join operator merges the rows of two tables to form a new table by matching the specified columns' values from each table.
+
+Syntax
+
+LeftTable | join [JoinParameters] ( RightTable ) on Attributes
+
+Kusto
+
+Copy
+SecurityEvent 
+| where EventID == "4624" 
+| summarize LogOnCount=count() by EventID, Account 
+| project LogOnCount, Account 
+| join kind = inner (
+     SecurityEvent 
+     | where EventID == "4634" 
+     | summarize LogOffCount=count() by EventID, Account 
+     | project LogOffCount, Account 
+) on Account
+
+---------------------------------------------------------------------------------------------
+
+Join Flavor	Output Records
+kind=leftanti, kind=leftantisemi	Returns all the records from the left side that don't have matches from the right
+kind=rightanti, kind=rightantisemi	Returns all the records from the right side that don't have matches from the left.
+kind unspecified, kind=innerunique	Only one row from the left side is matched for each value of the on key. The output contains a row for each match of this row with rows from the right
+kind=leftsemi	Returns all the records from the left side that have matches from the right.
+kind=rightsemi	Returns all the records from the right side that have matches from the left.
+kind=inner	Contains a row in the output for every combination of matching rows from left and right.
+kind=leftouter (or kind=rightouter or kind=fullouter)	Contains a row for every row on the left and right, even if it has no match. The unmatched output cells contain nulls.	
+
+---------------------------------------------------------------------------------------------
+
+extract
+Extract gets a match for a regular expression from a text string. You may optionally convert the extracted substring to the indicated type.
+
+Kusto
+
+print extract("x=([0-9.]+)", 1, "hello x=45.6|wo") == "45.6"
+
+---------------------------------------------------------------------------------------------
+
+Arguments
+
+regex: A regular expression.
+
+captureGroup: A positive int constant indicating the capture group to extract. A "0" stands for the entire match, a "1" for the value matched by the first '('parenthesis')' in the regular expression, 2 or more for subsequent parentheses.
+
+text: A string to search.
+
+typeLiteral: An optional type literal (for example, typeof(long)). If provided, the extracted substring is converted to this type.
+
+Returns
+
+If regex finds a match in text: the substring matched against the indicated capture group captureGroup, optionally converted to typeLiteral.
+
+If there's no match, or the type conversion fails: null.
+
+The following example uses the extract function to pull out the Account Name from the Account field of the SecurityEvent table.
+
+Kusto
+
+Copy
+SecurityEvent
+| where EventID == 4672 and AccountType == 'User'
+| extend Account_Name = extract(@"^(.*\\)?([^@]*)(@.*)?$", 2, tolower(Account))
+| summarize LoginCount = count() by Account_Name
+| where Account_Name != ""
+| where LoginCount < 10
+
+---------------------------------------------------------------------------------------------
+
+parse
+Parse evaluates a string expression and parses its value into one or more calculated columns. The computed columns will have nulls for unsuccessfully parsed strings.
+
+Syntax
+
+T | parse [kind=regex [flags=regex_flags] |simple|relaxed] Expression with * (StringConstant ColumnName [: ColumnType]) *
+
+---------------------------------------------------------------------------------------------
+
+T: The input table.
+
+kind:
+
+simple (the default): StringConstant is a regular string value and the match is strict. All string delimiters should appear in the parsed string, and all extended columns must match the required types.
+
+regex: StringConstant may be a regular expression and the match is strict. All string delimiters, which can be a regex for this mode, should appear in the parsed string, and all extended columns must match the required types.
+
+flags: Flags to be used in regex mode like U (Ungreedy), m (multi-line mode), s (match new line \n), i (case-insensitive) in RE2 flags.
+
+relaxed: StringConstant is a regular string value and the match is relaxed. All string delimiters should appear in the parsed string, but extended columns may partially match the required types. Extended columns that didn't match the required types will get the value null.
+
+Expression: An expression that evaluates to a string.
+
+ColumnName: The name of a column to assign a value to, extracted from the string expression.
+
+ColumnType: Optional. The scalar value that indicates the type to convert the value to. The default is the string type.
+
+---------------------------------------------------------------------------------------------
+
+Extract data from structured string data
+Completed
+100 XP
+8 minutes
+Strings fields may also contain structured data like JSON or Key-Value pairs. KQL provides easy access to these values for further analysis.
+
+Dynamic Fields
+Within a Log Analytics table, there are field types defined as Dynamic. Dynamic fields contain a key-value pair such as:
+
+
+Copy
+{"eventCategory":"Autoscale","eventName":"GetOperationStatusResult","operationId":"xxxxxxxx-6a53-4aed-bab4-575642a10226","eventProperties":"{\"OldInstancesCount\":6,\"NewInstancesCount\":5}","eventDataId":" xxxxxxxx -efe3-43c2-8c86-cd84f70039d3","eventSubmissionTimestamp":"2020-11-30T04:06:17.0503722Z","resource":"ch-appfevmss-pri","resourceGroup":"CH-RETAILRG-PRI","resourceProviderValue":"MICROSOFT.COMPUTE","subscriptionId":" xxxxxxxx -7fde-4caf-8629-41dc15e3b352","activityStatusValue":"Succeeded"}
+To access the strings within a Dynamic field, use the dot notation. The DeviceDetail field from the SigninLogs table is of type dynamic. In this example, you could access the Operating System with the DeviceDetail.operatingSystem field name.
+
+Kusto
+
+Copy
+SigninLogs 
+| extend OS = DeviceDetail.operatingSystem
+
+The query example below shows the use of Dynamic fields with the SigninLogs table.
+
+Kusto
+
+Copy
+// Example query for SigninLogs showing how to break out packed fields.
+
+SigninLogs 
+| extend OS = DeviceDetail.operatingSystem, Browser = DeviceDetail.browser 
+| extend StatusCode = tostring(Status.errorCode), StatusDetails = tostring(Status.additionalDetails) 
+| extend Date = startofday(TimeGenerated) 
+| summarize count() by Date, Identity, UserDisplayName, UserPrincipalName, IPAddress, ResultType, ResultDescription, StatusCode, StatusDetails 
+| sort by Date
+
+JSON
+KQL provides functions to manipulate JSON stored in string fields. Many logs submit data in JSON format, which requires you to know how to transform JSON data to queryable fields.
+
+The example below is a list of JSON related functions and operators.
+
+Function	Description
+parse-json() or todynamic()	Interprets a string as a JSON value and returns the value as dynamic. Use either of these functions to refer to a field: JsonField.Key or JsonField["Key"]
+mv-expand	is applied on a dynamic-typed array or property bag column so that each value in the collection gets a separate row. All the other columns in an expanded row are duplicated. mv_expand is the easiest way to process JSON arrays.
+mv-apply	Applies a subquery to each record and returns the union of the results of all subqueries. Apply a query to each value in an array.
+Run each query separately to see the results.
+
+Kusto
+
+Copy
+SigninLogs 
+| extend AuthDetails =  parse_json(AuthenticationDetails) 
+| extend AuthMethod =  AuthDetails[0].authenticationMethod 
+| extend AuthResult = AuthDetails[0].["authenticationStepResultDetail"] 
+| project AuthMethod, AuthResult, AuthDetails 
+
+
+SigninLogs 
+| mv-expand AuthDetails = parse_json(AuthenticationDetails) 
+| project AuthDetails
+
+SigninLogs 
+| mv-apply AuthDetails = parse_json(AuthenticationDetails) on
+(where AuthDetails.authenticationMethod == "Password")
+
+
+---------------------------------------------------------------------------------------------
+
+
+Integrate external data
+Completed
+100 XP
+5 minutes
+The externaldata operator returns a table whose schema is defined in the query itself. And whose data is read from an external storage artifact, such as a blob in Azure Blob Storage or an Azure Data Lake Storage file.
+
+Syntax
+
+
+Copy
+ externaldata ( ColumnName : ColumnType [, ...] )
+  [ StorageConnectionString [, ...] ]
+  [with ( PropertyName = PropertyValue [, ...] )]
+
+---------------------------------------------------------------------------------------------
+
+Arguments
+
+ColumnName, ColumnType: The arguments define the schema of the table. The syntax is the same as the syntax used when defining a table in. create table.
+
+StorageConnectionString: Storage connection strings that describe the storage artifacts holding the data to return.
+
+PropertyName, PropertyValue, ...: More properties that describe how to interpret the data retrieved from storage, as listed under ingestion properties.
+
+Currently, supported properties are:
+
+ARGUMENTS
+
+Property	Type	Description
+format	string	Data format. If not specified, an attempt is made to detect the data format from file extension (defaults to CSV). Any of the ingestion data formats are supported.
+ignoreFirstRecord	bool	If set to true, indicates that the first record in every file is ignored. This property is useful when querying CSV files with headers.
+ingestionMapping	string	A string value that indicates how to map data from the source file to the actual columns in the operator result set. See data mappings.
+
+---------------------------------------------------------------------------------------------
+
+Create parsers with functions
+Completed
+100 XP
+7 minutes
+Parsers are functions that define a virtual table with already parsed unstructured strings fields such as Syslog data.
+
+In the Logs window, you create a query, select the Save button, enter the Name, and select Save As Function from the drop-down. In this case, if we name the function "PrivLogins", I can then access the table using the name PrivLogins.
+
+Kusto
+
+Copy
+SecurityEvent
+| where EventID == 4672 and AccountType == 'User'
+
+
+---------------------------------------------------------------------------------------------
+
+This part is for two or more tetenat that means two or more regions---------------------------------------------------
+
+---------------------------------------------------------------------------------------------
+
+
+To query data across workspaces, use the workspace() function before the table name.
+
+Kusto
+
+Copy
+TableName
+
+| union workspace("WorkspaceName").TableName
+
+---------------------------------------------------------------------------------------------
+
+Understand Microsoft Sentinel tables
+Completed
+100 XP
+2 minutes
+Microsoft Sentinel has Analytic Rules that will generate Alerts and Incidents based on querying the tables within Log Analytics. The primary tables to manage alerts and incidents are SecurityAlert and SecurityIncident. Microsoft Sentinel provides tables to be a repository of indicators and watchlists.
+
+ Note
+
+Some of the Sentinel Data Connectors will ingest alerts directly.
+
+The table below is the Microsoft Sentinel feature related tables.
+
+Table	Description
+SecurityAlert	Contains Alerts Generated from Sentinel Analytical Rules. Also, it could include Alerts created directly from a Sentinel Data Connector
+SecurityIncident	Alerts can generate Incidents. Incidents are related to Alert(s).
+ThreatIntelligenceIndicator	Contains user-created or data connector ingested Indicators such as File Hashes, IP Addresses, Domains
+Watchlist	A Microsoft Sentinel watchlist contains imported data.
+
+---------------------------------------------------------------------------------------------
+
+Understand common tables
+Completed
+100 XP
+3 minutes
+When Sentinel ingests data from the Data Connectors, the following table lists the most commonly used tables.
+
+Table	Description
+AzureActivity	Entries from the Azure Activity log that provides insight into any subscription-level or management group level events that have occurred in Azure.
+AzureDiagnostics	Stores resource logs for Azure services that use Azure Diagnostics mode. Resource logs describe the internal operation of Azure resources.
+AuditLogs	Audit log for Microsoft Entra ID. Includes system activity information about user and group management, managed applications, and directory activities.
+CommonSecurityLog	Syslog messages using the Common Event Format (CEF).
+McasShadowItReporting	Microsoft Defender for Cloud Apps logs
+OfficeActivity	Audit logs for Office 365 tenants collected by Microsoft Sentinel. Including Exchange, SharePoint and Teams logs.
+SecurityEvent	Security events collected from windows machines by Azure Security Center or Microsoft Sentinel
+SigninLogs	Azure Activity Directory Sign-in logs
+Syslog	Syslog events on Linux computers using the Log Analytics agent.
+Event	Sysmon Events collected from a Windows host.
+WindowsFirewall	Windows Firewall Events
+
+---------------------------------------------------------------------------------------------
+
+Parse syslog data with KQL
+Completed
+100 XP
+3 minutes
+The Syslog collector writes log data to the Syslog table. One difference from the CEF Collector is that the message's data is stored in a string field named SyslogMessage. The Common Event Format (CEF) Connector writes to the CommonSecurityLog with the fields already parsed. For Syslog, you'll need to parse fields on every query that uses the Syslog table or write a Parser. A Parser is a KQL Function that is a query saved as a function and then referenced with the function name. The reference to the function name is like accessing any other table. By creating parses, you only need to write the SyslogMessage parsing once.
+
+In the Logs window, create a query, select the Save button, and select Function from the drop-down. Then specify function name and alias. In this case, if we create the Function named MyParser, I then can access the table using the name MyParser.
+
+Kusto
+
+Copy
+Syslog
+| where ProcessName contains "squid"
+| extend URL = extract("(([A-Z]+ [a-z]{4,5}:\\/\\/)|[A-Z]+ )([^ :]*)",3,SyslogMessage), 
+         SourceIP = extract("([0-9]+ )(([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3})\\.([0-9]{1,3}))",2,SyslogMessage), 
+         Status = extract("(TCP_(([A-Z]+)(_[A-Z]+)*)|UDP_(([A-Z]+)(_[A-Z]+)*))",1,SyslogMessage), 
+         HTTP_Status_Code = extract("(TCP_(([A-Z]+)(_[A-Z]+)*)|UDP_(([A-Z]+)(_[A-Z]+)*))/([0-9]{3})",8,SyslogMessage),
+         User = extract("(CONNECT |GET )([^ ]* )([^ ]+)",3,SyslogMessage),
+         RemotePort = extract("(CONNECT |GET )([^ ]*)(:)([0-9]*)",4,SyslogMessage),
+         Domain = extract("(([A-Z]+ [a-z]{4,5}:\\/\\/)|[A-Z]+ )([^ :\\/]*)",3,SyslogMessage)
+| extend TLD = extract("\\.[a-z]*$",0,Domain)
+
+---------------------------------------------------------------------------------------------
+
+Name of the rule. This provides a meaningful name for the alert rule.
+
+Rule type. This defines the type of the rule, which can be one of the following types:
+
+Anomaly
+Fusion
+Microsoft Security
+ML Behavior Analytics
+Scheduled
+Data Source. This specifies the data source connector that generated the alert.
+
+Tactics. This specifies methodologies in MITRE ATT&CK model used by different kinds of malware.
+
+
+
+---------------------------------------------------------------------------------------------
+
+Set rule logic tab
+On the Set rule logic tab, you can define the detection method by specifying KQL code that runs against the Microsoft Sentinel workspace. The KQL query filters the security data that is used to trigger and create an incident.
+
+When you enter the KQL query string in the Rule query field, you can use the Results simulation (preview) section to review the results of the query. The Results simulation (preview) section helps you determine whether your query returned the expected results.
+
+AzureActivity
+| where OperationName == "MICROSOFT.COMPUTE/VIRTUALMACHINES/WRITE"
+| where ActivityStatus == "Succeeded"
+| make-series dcount(ResourceId)  default=0 on EventSubmissionTimestamp in range(ago(7d), now(), 1d) by Caller
+
+---------------------------------------------------------------------------------------------
+
+Components of an Automation Rule
+Automation rules are made up of several components:
+
+Trigger: Automation rules are triggered by the creation of an incident.
+
+To review – incidents are created from alerts by analytics rules, of which there are several types, as explained in the tutorial Detect threats with built-in analytics rules in Microsoft Sentinel.
+
+Conditions: Complex sets of conditions can be defined to govern when actions (see below) should run. These conditions are typically based on the states or values of attributes of incidents and their entities, and they can include AND/OR/NOT/CONTAINS operators.
+
+Actions: Actions can be defined to run when the conditions (see above) are met. You can define many actions in a rule, and you can choose the order in which they’ll run (see below). The following actions can be defined using automation rules, without the need for the advanced functionality of a playbook:
+
+Changing the status of an incident, keeping your workflow up to date.
+
+When changing to “closed,” specifying the closing reason and adding a comment. This helps you keep track of your performance and effectiveness, and fine-tune to reduce false positives.
+
+Changing the severity of an incident – you can reevaluate and reprioritize based on the presence, absence, values, or attributes of entities involved in the incident.
+
+Assigning an incident to an owner – this helps you direct types of incidents to the personnel best suited to deal with them, or to the most available personnel.
+
+Adding a tag to an incident – this is useful for classifying incidents by subject, by attacker, or by any other common denominator.
+
+Also, you can define an action to run a playbook, in order to take more complex response actions, including any that involve external systems. Only playbooks activated by the incident trigger are available to be used in automation rules. You can define an action to include multiple playbooks, or combinations of playbooks and other actions, and the order in which they'll run.
+
+Playbooks using either version of Logic Apps (Standard or Consumption) will be available to run from automation rules.
+
+Expiration date: You can define an expiration date on an automation rule. The rule will be disabled after that date. This is useful for handling (that is, closing) "noise" incidents caused by planned, time-limited activities such as penetration testing.
+
+Order: You can define the order in which automation rules will run. Later automation rules will evaluate the conditions of the incident according to its state after being acted on by previous automation rules.
+
+For example, if "First Automation Rule" changed an incident's severity from Medium to Low, and "Second Automation Rule" is defined to run only on incidents with Medium or higher severity, it won't run on that incident.
+
+---------------------------------------------------------------------------------------------
+
+Microsoft Sentinel Logic Apps connector
+A Microsoft Sentinel playbook uses a Microsoft Sentinel Logic Apps connector. It provides the triggers and actions that can start the playbook and perform defined actions.
+
+Currently, there are two triggers from Microsoft Sentinel Logic Apps connector:
+
+When a response to a Microsoft Sentinel alert is triggered
+
+When Microsoft Sentinel incident creation rule is triggered
+
+ Note
+
+Because Microsoft Sentinel Logic App connector is in preview, the features described in this module might change in the future.
+
+The following table lists all the current actions for the Microsoft Sentinel connector.
+
+Name	Description
+Add comment to incident	Adds comments to the selected incident.
+Add labels to incident	Adds labels to the selected incident.
+Alert - Get incident	Returns the incident associated with the selected alert.
+Change incident description	Changes the description for the selected incident.
+Change incident severity	Changes the severity for the selected incident.
+Change incident status	Changes the status for the selected incident.
+Change incident title (V2)	Changes the title for the selected incident.
+Entities - Get Accounts	Returns a list of accounts associated with the alert.
+Entities - Get FileHashes	Returns a list of File Hashes associated with the alert.
+Entities - Get Hosts	Returns a list of hosts associated with the alert.
+Entities - Get IPs	Returns a list of IPs associated with the alert.
+Entities - Get URLs	Returns a list of URLs associated with the alert.
+Remove labels from incident	Removes the labels for the selected incident.
+
+---------------------------------------------------------------------------------------------
+
+Key concepts
+It's important to understand the following key Microsoft Sentinel incident management concepts:
+
+Data connectors. You can use Microsoft Sentinel data connectors to ingest and collect data from security-related services. Data connectors can collect events from Linux or Windows computers running the Log Analytics agent, from a Linux syslog server for devices like firewalls or proxies, or directly from Microsoft Azure services. These events forward to a Log Analytics workspace associated with Microsoft Sentinel.
+Events. Microsoft Sentinel stores events in a Log Analytics workspace. These events contain the details of security-related activity that you want Microsoft Sentinel to monitor.
+Analytics rules. Analytics rules detect important security events and generate alerts. You can create analytics rules by using built-in templates or by using custom Kusto Query Language (KQL) queries against Log Analytics workspaces in Microsoft Sentinel.
+Alerts. Analytics rules generate alerts when they detect important security events. You can configure alerts to generate incidents.
+Incidents. Microsoft Sentinel creates incidents from analytics rule alerts. Incidents can contain multiple related alerts. You use each incident as a starting point and tracking mechanism for investigation into security concerns in your environment.
+
+---------------------------------------------------------------------------------------------
+
+Status
+Every new incident created in Microsoft Sentinel is assigned a status of New. As you review and respond to incidents, manually change the status to reflect the current state of the incident. For incidents under investigation, set the status to Active. When an incident is fully resolved, set the status to Closed.
+
+When you set the status to Closed, you're prompted to choose one of the following resolutions:
+
+True Positive - Suspicious activity
+Benign Positive - Suspicious but expected
+False Positive - Incorrect alert logic
+False Positive - Inaccurate data
+Undetermined
+
+---------------------------------------------------------------------------------------------
+
+Filtering the relevant records
+In many cases, a table in Microsoft Sentinel includes multiple types of events. For example:
+
+The Syslog table has data from multiple sources.
+Custom tables may include information from a single source that provides more than one event type and can fit various schemas.
+Therefore, a parser should first filter only the records relevant to the target schema.
+
+Filtering in KQL is done using the where operator. For example, Sysmon event 1 reports process creation, and is therefore normalized to the ProcessEvent schema. The Sysmon event 1 event is part of the Event table, so you would use the following filter:
+
+KQL
+
+Copy
+Event | where Source == "Microsoft-Windows-Sysmon" and EventID == 1
+
+---------------------------------------------------------------------------------------------
+
+Queries pane
+Use the Queries pane to create queries that retrieve data based on the expression that you provide. The Queries pane helps you to write an accurate query by providing suggestions and automatically filling the expected elements of the query.
+
+Take advantage of the capabilities of the Kusto Query Language (KQL) to write a query that retrieves data from the logs. The following example illustrates how to use KQL code in your queries to identify deleted virtual machines.
+
+Kusto
+
+Copy
+AzureActivity
+| where OperationName == 'Delete Virtual Machine'
+| where ActivityStatus == 'Accepted'
+| extend AccountCustomEntity = Caller
+| extend IPCustomEntity = CallerIpAddress
+
+---------------------------------------------------------------------------------------------
+
+You can add other parameters with different types such as text, dropdown, multivalues, or similar.
+
+Select Add parameters.
+
+In the New Parameter page, enter the following values:
+
+Name	Description
+Parameter name	Level
+Display name	Level
+Parameter type	From the dropdown menu, select Drop down.
+Required?	Select this checkbox.
+Allow multiple selections	Select this checkbox.
+Limit multiple selections	Don't select this checkbox.
+Delimiter	Retain the default values.
+Quote with	Retain the default values.
+Explanation	This parameter filters the events based on the level.
+Hide parameter in reading mode	Don't select this checkbox.
+Get data from	Query
+
+---------------------------------------------------------------------------------------------
+
+Introduction
+Completed
+100 XP
+3 minutes
+Microsoft Sentinel content is Security Information and Event Management (SIEM) content that enables customers to ingest data, monitor, alert, hunt, investigate, respond, and connect with different products, platforms, and services in Microsoft Sentinel.
+
+Content in Microsoft Sentinel includes any of the following types:
+
+Data connectors provide log ingestion from different sources into Microsoft Sentinel
+Parsers provide log formatting/transformation into ASIM formats, supporting usage across various Microsoft Sentinel content types and scenarios
+Workbooks provide monitoring, visualization, and interactivity with data in Microsoft Sentinel, highlighting meaningful insights for users
+Analytics rules provide alerts that point to relevant SOC actions via incidents
+Hunting queries are used by SOC teams to proactively hunt for threats in Microsoft Sentinel
+Notebooks help SOC teams use advanced hunting features in Jupyter and Azure Notebooks
+Watchlists support the ingestion of specific data for enhanced threat detection and reduced alert fatigue
+Playbooks and Azure Logic Apps custom connectors provide features for automated investigations, remediations, and response scenarios in Microsoft Sentinel
+To maintain content in for Microsoft Sentinel use:
+
+Content hub: - Microsoft Sentinel solutions are packages of Microsoft Sentinel content or Microsoft Sentinel API integrations, which fulfill an end-to-end product, domain, or industry vertical scenario in Microsoft Sentinel.
+Repositories: - Repositories help you automate the deployment and management of your Microsoft Sentinel content through central repositories.
+Community: Onboard community content on-demand to enable your scenarios. The GitHub repo at https://github.com/Azure/Azure-Sentinel contains content by Microsoft and the community that is tested and available for you to implement in your Sentinel workspace.
+
+---------------------------------------------------------------------------------------------
+
+Delete a VM
+In this task, you delete a VM to test rule detection and incident creation.
+
+In the Azure portal, search for and select Virtual machines.
+On the Virtual machines page, select the check box beside the virtual machine labeled simple-vm, and then select Delete from the toolbar.
+In the Delete Resources pane, confirm the deletion and then select Delete.
+Manage Microsoft Sentinel threat-hunting queries
+In this task, you create and manage threat-hunting queries to review events related to deleting the VM in the previous task. It might take up to 5 minutes for the event to appear in Microsoft Sentinel after you delete the VM.
+
+In the Azure portal, search for and select Microsoft Sentinel, and then select the previously created Sentinel workspace.
+
+On the Microsoft Sentinel page, on the menu bar, in the Threat management section, select Hunting.
+
+On the Hunting page, select the Queries tab. Then choose New Query.
+
+On the Create custom query page, provide the following inputs, and then select Create.
+
+Name: Enter Deleted VMs.
+
+Description: Enter a detailed description that helps other security analysts understand what the rule does.
+
+Custom query: Enter the following code.
+
+Kusto
+
+Copy
+  AzureActivity
+  | where OperationName == 'Delete Virtual Machine'
+  | where ActivityStatus == 'Accepted'
+  | extend AccountCustomEntity = Caller
+  | extend IPCustomEntity = CallerIpAddress
+
+---------------------------------------------------------------------------------------------
+
+Develop a hypothesis
+Completed
+100 XP
+5 minutes
+Hunting starts with a Hypothesis. The idea of what we are going to hunt. Getting this right is critical because it drives our focuses on what we are going to do. What makes a good Hypothesis?
+
+There are many factors, but here are the key ones:
+
+Keep it achievable. Don't perform a hunt where you know you have no hope of finding results. It could be that you don't have the data available, or have insufficient knowledge about the threat to understand how to find it.
+
+Keep the scope narrow. Avoid broad a hypothesis such as "I'm going to hunt for strange log-ons." Such a hypothesis fails to define what the results could mean.
+
+Keep it time-bound. Are you looking for any sign-ins since the beginning of your logs? Are you looking for last week? The last day? The time-bounded also is used in documentation. You'll want Threat Hunting to be a continual process. If you don't time-bound your hunts, there's a chance that you'll end up just repeating the same hunt on the same dataset. You'll be able to say, "I did this hunt, at this time, covering this period." With this documented, your team members will know what period was hunted for with this Hypothesis.
+
+Keep it useful and efficient. You want to target threats that maybe you don't have adequate coverage for in your detections. These might be things that you know that you've previously missed or that you haven't detected. A good SOC team typically has a good idea about where their coverage is good and where it may be weaker and needs improvement. You also want to make sure it relates to realistic threats. There's no point in hunting for an advanced threat that targets an industry you're not in or a platform you aren't using.
+
+Keep it related to the threat model that you are defending against. Otherwise, you may spend much time threat hunting for things that you'll never find and which aren't a threat.
+
+Don't start your Threat Hunting journey going after the most advanced threats. Start with the basics and incrementally mature your organization's Threat Hunting capabilities. Start with a simple Hunt Hypothesis. An example hypothesis could be that we have Threat Intel that a Threat Actor, has automated attacks that use the cmd.exe process.
+
+Another Hypothesis could be; We want to check for the last day in which accounts have run cmd.exe, but that have not run cmd.exe during the past week.
+
+
+ 
+https://aka.ms/lademo
