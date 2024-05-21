@@ -8,3 +8,13 @@ https://documentation.wazuh.com/current/user-manual/ruleset/ruleset-xml-syntax/d
 https://github.com/leechristensen/UnmanagedPowerShell
 
 https://learn.microsoft.com/en-us/azure/sentinel/
+https://learn.microsoft.com/en-us/training/modules/threat-response-sentinel-playbooks/7-summary
+
+Maquina virutual para ver si funcionan los querys de microsoft
+https://ms.portal.azure.com/#blade/Microsoft_Azure_Monitoring_Logs/DemoLogsBlade
+
+Github para buscar busquedas en Azure
+https://github.com/Azure/Azure-Sentinel?tab=readme-ov-file
+
+Buscar la severidad de una ip -------------------------------------------------------------------------------------------------
+https://learn.microsoft.com/en-us/training/modules/perform-threat-hunting-sentinel-with-notebooks/5-explore-notebook-code
