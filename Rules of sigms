@@ -21,3 +21,42 @@ level: medium #Severity level of the detection rule.
 tags: #Associated TTPs from MITRE ATT&CK
   - attack.credential_access #MITRE Tactic
   - attack.t1110 #MITRE Technique
+
+
+tack Technique	Required Detection Fields
+HTA payload	
+EventID
+ParentImage
+Image
+Certutil Download	
+EventID
+Image
+CommandLine
+Netcat Reverse Shell	
+EventID
+Image
+CommandLine
+Hashes
+PowerUp Enumeration	
+EventID
+Image
+CommandLine
+Service Binary Modification	
+EventID
+Image
+CommandLine
+RunOnce Persistence	
+EventID
+Image
+CommandLine
+7-zip Collection	
+EventID
+Image
+CommandLine
+cURL Exfiltration	
+EventID
+Image
+CommandLine
+Ransomware File Encryption	
+EventID
+TargetFilename
