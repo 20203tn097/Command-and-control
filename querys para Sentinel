@@ -1,0 +1,12 @@
+
+ou are notified that the account of User1 is compromised.--------------------------------------------------------
+//Query for devices that the potentially compromised account has logged onto
+| where LoggedOnUsers contains '<account-name>'
+| distinct DeviceId
+//Crosscheck devices against alert records in AlertEvidence and AlertInfo tables
+| join kind=inner AlertEvidence on DeviceId
+| project AlertId
+//List all alerts on devices that user has logged on to
+| join AlertInfo on AlertId
+| project AlertId, Timestamp, Title, Severity, Category
+DeviceInfo LoggedOnUsers AlertEvidence "project AlertID"
