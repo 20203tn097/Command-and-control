@@ -1,0 +1,5 @@
+Querys for kebana 
+
+host.name: WKSTN-* AND process.name: chrome.exe AND winlog.event_id: 11
+event.category: authentication AND system.auth.ssh.event: Accepted
+
