@@ -1,0 +1,19 @@
+Razones de falla en inicio de sesion-------------------------------------
+DeviceLogonEvents
+| where DeviceName in ("Name", AND "Name")
+ActionType == FailureReason
+| summarize LogonFailures=count()
+by DeviceName, LogonType
+
+
+Identiificar dispositivos afectados por un archivo adjunto en un correo eletronico sopechoso
+
+EmailAttachmentInfo
+| where SenderFromAdress =~ "Exape@gmai[.]com"
+| where isnotempty (SHA256)
+| join (
+DeviceFileEvents
+)
+|project Filename, SHA256
+) on SHA256
+| PROJECT timesTamp, Filename, SHA256, DeviceId, NetworMessageId, SenderFromAddress, RecipientEmailAddress
