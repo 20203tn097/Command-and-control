@@ -1,0 +1,186 @@
+Table name	            Description
+AlertEvidence		        Files, IP addresses, URLs, users, or devices associated with alerts
+AlertInfo		            Alerts from Microsoft Defender for Endpoint, Microsoft Defender for Office 365, Microsoft Cloud App Security, and Microsoft Defender for Identity, including severity information and threat categorization
+CloudAppEvents		      Events involving accounts and objects in Office 365 and other cloud apps and services
+DeviceEvents		        Multiple event types, including events triggered by security controls such as Windows Defender Antivirus and exploit protection
+DeviceFileCertificateInfo	Certificate information of signed files obtained from certificate verification events on endpoints
+DeviceFileEvents	      File creation, modification, and other file system events
+DeviceImageLoadEvents	DLL loading events
+DeviceInfo	            Machine information, including OS information
+DeviceLogonEvents	      Sign-ins and other authentication events on devices
+DeviceNetworkEvents	    Network connection and related events
+DeviceNetworkInfo	      Network properties of devices, including physical adapters, IP and MAC addresses, as well as connected networks and domains
+DeviceProcessEvents	    Process creation and related events
+DeviceRegistryEvents	  Creation and modification of registry entries
+DeviceTvmSecureConfigurationAssessment	Threat & Vulnerability Management assessment events, indicating the status of various security configurations on devices
+DeviceTvmSecureConfigurationAssessmentKB	Knowledge base of various security configurations used by Threat & Vulnerability Management to assess devices; includes mappings to various standards and benchmarks
+DeviceTvmSoftwareInventory	Inventory of software installed on devices, including their version information and end-of-support status
+DeviceTvmSoftwareVulnerabilities	Software vulnerabilities found on devices and the list of available security updates that address each vulnerability
+DeviceTvmSoftwareVulnerabilitiesKB	Knowledge base of publicly disclosed vulnerabilities, including whether exploit code is publicly available
+EmailAttachmentInfo	    Information about files attached to emails
+EmailEvents	Microsoft 365 email events, including email delivery and blocking events
+EmailPostDeliveryEvents	Security events that occur post-delivery, after Microsoft 365 has delivered the emails to the recipient mailbox
+EmailUrlInfo		        Information about URLs on emails
+IdentityDirectoryEvents	Events involving an on-premises domain controller running Active Directory (AD). This table covers a range of identity-related events and system events on the domain controller.
+IdentityInfo		        Account information from various sources, including Microsoft Entra ID
+IdentityLogonEvents	Authentication events on Active Directory and Microsoft online services
+IdentityQueryEvents	    Queries for Active Directory objects, such as users, groups, devices, and domains
+
+
+
+----------------------------------------------------------This parti you will find information abour how you can launch querys in Kusto--------------------------------------------------------------------------
+
+DeviceEvents
+| where Timestamp > ago(7d)
+| where ActionType == "AntivirusDetection"
+| summarize (Timestamp, ReportId)=arg_max(Timestamp, ReportId), count() by DeviceId
+| where count_ > 5
+
+---------------------------------------------------------------------------------------------
+AlertEvidence
+| where Timestamp > ago(7d)
+| project Timestamp, AlertId, EvidenceType, EvidenceValue
+
+-------------------------------------------------------------------------------------------
+CloudAppEvents
+| where Timestamp > ago(7d)
+| project Timestamp, AccountName, AppDisplayName, ActionType, ObjectName
+
+----------------------
+CloudAppEvents
+| where Timestamp > ago(7d)
+| project Timestamp, AccountName, AppDisplayName, ActionType, ObjectName, SourceIPAddress, ActivityType, ActionResult
+| summarize EventCount = count() by AccountName, AppDisplayName, ActionType, ObjectName, SourceIPAddress, ActivityType, ActionResult
+| order by EventCount desc
+
+---------------------
+------------------------------------------------------------------------------------------
+
+DeviceEvents
+| where Timestamp > ago(7d)
+| project Timestamp, DeviceId, DeviceName, ActionType, ReportId, FileName, FolderPath, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine
+| summarize EventCount = count() by DeviceId, DeviceName, ActionType, FileName, FolderPath, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine
+| order by EventCount desc
+
+-------------------------------------------------------------------------------------------
+DeviceFileCertificateInfo
+| where Timestamp > ago(7d)
+| project Timestamp, DeviceId, DeviceName, FileName, FolderPath, Issuer, Subject, SerialNumber, Thumbprint, ValidFrom, ValidTo, SignatureLevel
+| summarize CertEventCount = count() by DeviceId, DeviceName, FileName, FolderPath, Issuer, Subject, SerialNumber, Thumbprint, ValidFrom, ValidTo, SignatureLevel
+| order by CertEventCount desc
+
+------------------------------------------------------------------------------------------
+DeviceFileEvents
+| where Timestamp > ago(7d)
+| project Timestamp, DeviceId, DeviceName, ActionType, FileName, FolderPath, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, FileSize, PreviousFileName
+| summarize EventCount = count() by DeviceId, DeviceName, ActionType, FileName, FolderPath, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, FileSize, PreviousFileName
+| order by EventCount desc
+
+-------------------------------------------------------------------------------------------
+
+DeviceImageLoadEvents
+| where Timestamp > ago(7d)
+| project Timestamp, DeviceId, DeviceName, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, ImageLoadType, ImageFileName, ImageFolderPath, ImageFileHash
+| summarize EventCount = count() by DeviceId, DeviceName, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, ImageLoadType, ImageFileName, ImageFolderPath, ImageFileHash
+| order by EventCount desc
+
+
+------------------------------------------------------------------------------------------
+DeviceInfo
+| project Timestamp, DeviceId, DeviceName, OSPlatform, OSVersion, OSBuild, Manufacturer, Model, ProcessorArchitecture, IsVirtualMachine, AntivirusStatus
+| summarize DeviceCount = count() by DeviceId, DeviceName, OSPlatform, OSVersion, OSBuild, Manufacturer, Model, ProcessorArchitecture, IsVirtualMachine, AntivirusStatus
+| order by DeviceCount desc
+
+-------------------------------------------------------------------------------------------
+DeviceLogonEvents
+| where Timestamp > ago(7d)
+| project Timestamp, DeviceId, DeviceName, LogonType, LogonResult, AccountName, AccountDomain, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, SourceIPAddress
+| summarize EventCount = count() by DeviceId, DeviceName, LogonType, LogonResult, AccountName, AccountDomain, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, SourceIPAddress
+| order by EventCount desc
+
+------------------------------------------------------------------------------------------
+DeviceNetworkEvents
+| where Timestamp > ago(7d)
+| project Timestamp, DeviceId, DeviceName, RemoteIP, RemotePort, LocalIP, LocalPort, Protocol, ActionType, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, NetworkDirection
+| summarize EventCount = count() by DeviceId, DeviceName, RemoteIP, RemotePort, LocalIP, LocalPort, Protocol, ActionType, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, NetworkDirection
+| order by EventCount desc
+
+-------------------------------------------------------------------------------------------
+
+DeviceNetworkInfo
+| project Timestamp, DeviceId, DeviceName, AdapterName, IPAddress, MACAddress, NetworkName, Domain
+| summarize DeviceCount = count() by DeviceId, DeviceName, AdapterName, IPAddress, MACAddress, NetworkName, Domain
+| order by DeviceCount desc
+
+------------------------------------------------------------------------------------------
+
+DeviceProcessEvents
+| where Timestamp > ago(7d)
+| project Timestamp, DeviceId, DeviceName, ProcessName, ProcessCommandLine, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, ProcessId, ParentProcessId, IsElevated, IntegrityLevel
+| summarize EventCount = count() by DeviceId, DeviceName, ProcessName, ProcessCommandLine, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, ProcessId, ParentProcessId, IsElevated, IntegrityLevel
+| order by EventCount desc
+
+
+-------------------------------------------------------------------------------------------
+
+DeviceRegistryEvents
+| where Timestamp > ago(7d)
+| project Timestamp, DeviceId, DeviceName, RegistryKey, RegistryValueName, RegistryValueType, RegistryValueData, ActionType, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine
+| summarize EventCount = count() by DeviceId, DeviceName, RegistryKey, RegistryValueName, RegistryValueType, RegistryValueData, ActionType, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine
+| order by EventCount desc
+
+
+------------------------------------------------------------------------------------------
+
+DeviceTvmSecureConfigurationAssessment
+| where Timestamp > ago(7d)
+| project Timestamp, DeviceId, DeviceName, AssessmentType, AssessmentName, AssessmentResult, RemediationAction, RemediationStatus, RemediationComment
+| summarize EventCount = count() by DeviceId, DeviceName, AssessmentType, AssessmentName, AssessmentResult, RemediationAction, RemediationStatus, RemediationComment
+| order by EventCount desc
+
+-------------------------------------------------------------------------------------------
+
+EmailAttachmentInfo
+| where Timestamp > ago(7d)
+| project Timestamp, MessageId, AttachmentName, AttachmentType, AttachmentSize
+
+
+------------------------------------------------------------------------------------------
+
+EmailEvents
+| where Timestamp > ago(7d)
+| project Timestamp, MessageId, SenderAddress, RecipientAddress, Subject, ActionType, ActionStatus
+
+-------------------------------------------------------------------------------------------
+EmailPostDeliveryEvents
+| where Timestamp > ago(7d)
+| project Timestamp, MessageId, SenderAddress, RecipientAddress, Subject, EventType, EventDetail
+
+------------------------------------------------------------------------------------------
+EmailUrlInfo
+| where Timestamp > ago(7d)
+| project Timestamp, MessageId, Url, UrlClicked, UrlBlocked
+
+-------------------------------------------------------------------------------------------
+IdentityDirectoryEvents
+| where Timestamp > ago(7d)
+| project Timestamp, EventId, EventCategory, EventDescription, UserName, UserDomain
+
+
+------------------------------------------------------------------------------------------
+IdentityInfo
+| where Timestamp > ago(7d)
+| project Timestamp, AccountId, AccountType, DisplayName, Domain
+
+-------------------------------------------------------------------------------------------
+
+IdentityLogonEvents
+| where Timestamp > ago(7d)
+| project Timestamp, EventId, EventType, UserName, UserDomain, IPAddress, Location, ResultType
+
+------------------------------------------------------------------------------------------
+IdentityQueryEvents
+| where Timestamp > ago(7d)
+| project Timestamp, QueryType, QueryText, ResultCount
+
+-------------------------------------------------------------------------------------------
