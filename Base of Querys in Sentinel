@@ -192,6 +192,14 @@ IdentityDirectoryEvents
 | project Timestamp, EventId, EventCategory, EventDescription, UserName, UserDomain
 
 
+---------------
+IdentityDirectoryEvents
+IdentityInfo
+IdentityQueryEvents
+| where isnotempty (AcountSid)
+---------------
+
+
 ------------------------------------------------------------------------------------------
 IdentityInfo
 | where Timestamp > ago(7d)
