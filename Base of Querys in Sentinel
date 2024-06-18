@@ -144,6 +144,15 @@ EmailAttachmentInfo
 | where Timestamp > ago(7d)
 | project Timestamp, MessageId, AttachmentName, AttachmentType, AttachmentSize
 
+-----------------------------------------------------------------
+EmailAttachmentInfo
+| where isnotempty(SHA256)
+| where RecipientEmailAddress contains "vaudoyenbrie"
+| join kind=inner (
+    DeviceFileEvents
+    | project FileName, SHA256
+) on SHA256  
+| project Timestamp, FileName, SHA256, SenderFromAddress, RecipientEmailAddress
 
 ------------------------------------------------------------------------------------------
 
