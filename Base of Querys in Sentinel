@@ -98,6 +98,15 @@ DeviceInfo
 | summarize DeviceCount = count() by DeviceId, DeviceName, OSPlatform, OSVersion, OSBuild, Manufacturer, Model, ProcessorArchitecture, IsVirtualMachine, AntivirusStatus
 | order by DeviceCount desc
 
+--------------------
+DeviceInfo
+| where LoggedOnUsers contains 'user'
+| distinct DeviceID
+| join kind=inner AlertEvidence on DiviceId
+| project AlertId
+| join AlertInfo on AlertId
+| project AlertId, Timestamp, Title, Severity, Category
+------------------------
 -------------------------------------------------------------------------------------------
 DeviceLogonEvents
 | where Timestamp > ago(7d)
