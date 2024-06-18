@@ -36,6 +36,13 @@ DeviceEvents
 | summarize (Timestamp, ReportId)=arg_max(Timestamp, ReportId), count() by DeviceId
 | where count_ > 5
 
+------------------
+
+DeviceEvents
+| where DeviceName in ("Nombre", and "Nombre", "nombre")
+ActionType == FailureReaspm
+|summarize LogonFailures=count() by DeviceName, LogonType
+
 ---------------------------------------------------------------------------------------------
 AlertEvidence
 | where Timestamp > ago(7d)
