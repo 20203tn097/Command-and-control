@@ -217,3 +217,10 @@ IdentityQueryEvents
 | project Timestamp, QueryType, QueryText, ResultCount
 
 -------------------------------------------------------------------------------------------
+
+------------- iNTEGRATION THAT I WOULD LIKE TO DO
+
+pROJECT
+KIND
+INDER
+({})
