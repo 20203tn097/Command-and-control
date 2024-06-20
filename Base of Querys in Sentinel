@@ -18,12 +18,12 @@ DeviceTvmSoftwareInventory	  Inventory of software installed on devices, includi
 DeviceTvmSoftwareVulnerabilities	Software vulnerabilities found on devices and the list of available security updates that address each vulnerability
 DeviceTvmSoftwareVulnerabilitiesKB	Knowledge base of publicly disclosed vulnerabilities, including whether exploit code is publicly available
 EmailAttachmentInfo	           Information about files attached to emails
-EmailEvents	Microsoft 365 email events, including email delivery and blocking events
-EmailPostDeliveryEvents	Security events that occur post-delivery, after Microsoft 365 has delivered the emails to the recipient mailbox
+EmailEvents	                    Microsoft 365 email events, including email delivery and blocking events
+EmailPostDeliveryEvents	        Security events that occur post-delivery, after Microsoft 365 has delivered the emails to the recipient mailbox
 EmailUrlInfo		            Information about URLs on emails
-IdentityDirectoryEvents	Events involving an on-premises domain controller running Active Directory (AD). This table covers a range of identity-related events and system events on the domain controller.
+IdentityDirectoryEvents	        Events involving an on-premises domain controller running Active Directory (AD). This table covers a range of identity-related events and system events on the domain controller.
 IdentityInfo		            Account information from various sources, including Microsoft Entra ID
-IdentityLogonEvents	Authentication events on Active Directory and Microsoft online services
+IdentityLogonEvents	            Authentication events on Active Directory and Microsoft online services
 IdentityQueryEvents	            Queries for Active Directory objects, such as users, groups, devices, and domains
 
 
