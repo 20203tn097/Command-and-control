@@ -9,4 +9,7 @@ Boolean operators
 Grouping 
   msg_origin.source:*agent AND (event_score: >60 OR severity:> 50)
 Regular expression syntax
-  file_path:"\/"
+  file_path:"\/home"
+
+  msg_origin.source:*agent AND (event_score: >60 OR severity: >50)
+file_path:"\/home\/scangineer\/Filemonitor\/david.txt"
