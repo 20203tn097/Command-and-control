@@ -1,0 +1,12 @@
+Lucene query string "mini language " systax incuding:
+
+-Wilcards
+  msg_origin.source: *agent
+-Ranges
+  event_score:[50 TO 100]
+Boolean operators
+  event_score: >60
+Grouping 
+  msg_origin.source:*agent AND (event_score: >60 OR severity:> 50)
+Regular expression syntax
+  file_path:"\/"
