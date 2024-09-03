@@ -114,6 +114,13 @@ DeviceLogonEvents
 | summarize EventCount = count() by DeviceId, DeviceName, LogonType, LogonResult, AccountName, AccountDomain, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine, SourceIPAddress
 | order by EventCount desc
 
+-------------------------------
+DeviceLogonEvents
+| where Timestamp > ago(2h)
+| project Timestamp, DeviceId, DeviceName, LogonType, AccountName, AccountDomain, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine
+| summarize EventCount = count() by DeviceId, DeviceName, LogonType, AccountName, AccountDomain, InitiatingProcessAccountName, InitiatingProcessFileName, InitiatingProcessCommandLine
+| order by EventCount desc
+
 ------------------------------------------------------------------------------------------
 DeviceNetworkEvents
 | where Timestamp > ago(7d)
