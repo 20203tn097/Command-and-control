@@ -26,6 +26,10 @@ IdentityInfo		            Account information from various sources, including Mi
 IdentityLogonEvents	            Authentication events on Active Directory and Microsoft online services
 IdentityQueryEvents	            Queries for Active Directory objects, such as users, groups, devices, and domains
 
+SecurityAlert
+| where ProductName has "Microsoft 365 Defender"
+| where Entities contains "Compromised"
+
 
 
 ----------------------------------------------------------This parti you will find information abour how you can launch querys in Kusto--------------------------------------------------------------------------
