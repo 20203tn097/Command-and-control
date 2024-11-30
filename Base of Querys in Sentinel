@@ -245,3 +245,50 @@ SigninLogs
 | summarize applicationCount = dcount(AppDisplayName) by UserPrincipalName, IPAddress
 | where applicationCount >= threshold
 ________________________________________________________________________________________________
+
+
+ Detección de PowerShell encriptados
+DeviceProcessEvents
+| where FileName == "powershell.exe"
+| where ProcessCommandLine has_any ("-enc", "-e", "base64")
+| project Timestamp, DeviceName, FileName, ProcessCommandLine, InitiatingProcessAccountName, InitiatingProcessAccountDomain
+________________________________________________________________________________________________
+
+
+
+2. Descargas de ejecutables desde URLs sospechosas
+DeviceNetworkEvents
+| where ActionType == "ConnectionSuccess" and InitiatingProcessFileName has_any (".exe", ".bat", ".ps1")
+| where RemoteUrl contains ".exe" or RemoteUrl contains ".dll"
+| project Timestamp, DeviceName, RemoteUrl, InitiatingProcessFileName, InitiatingProcessCommandLine
+________________________________________________________________________________________________
+
+3. Eventos relacionados con phishing (ej. uso de macros maliciosas)
+DeviceFileEvents
+| where FileName endswith ".docm" or FileName endswith ".xlsm"
+| where InitiatingProcessCommandLine has_any ("cmd", "powershell", "mshta", "curl", "wget")
+| project Timestamp, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine
+________________________________________________________________________________________________
+
+4. Detección de movimientos laterales (Herramientas comunes como PsExec, RDP, SMB)
+DeviceProcessEvents
+| where InitiatingProcessFileName has_any ("psexec.exe", "wmiexec.vbs", "rundll32.exe", "mstsc.exe")
+| or (InitiatingProcessCommandLine has "admin$" or InitiatingProcessCommandLine has "\\")
+| project Timestamp, DeviceName, InitiatingProcessFileName, InitiatingProcessCommandLine, AccountName, RemoteDeviceName
+________________________________________________________________________________________________
+
+5. Movimiento de archivos de Office desde ubicaciones no comunes
+DeviceFileEvents
+| where FileName endswith ".docx" or FileName endswith ".xlsx" or FileName endswith ".pptx"
+| where FolderPath startswith @"C:\Windows\Temp" or FolderPath contains "Downloads"
+| project Timestamp, DeviceName, FileName, FolderPath, InitiatingProcessCommandLine
+________________________________________________________________________________________________
+
+6. Inicios de sesión sospechosos (Ej. desde países no autorizados o múltiples fallos)
+SigninLogs
+| where ResultType != "0" or Location not in ("US", "ES")  // Cambia según países autorizados
+| summarize Count = count() by AccountDisplayName, Location, AppDisplayName
+| where Count > 5
+| project AccountDisplayName, Location, AppDisplayName, Count
+
+
